@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Doctor Workstation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-extras.css') }}">
+</head>
+<body class="bg-slate-50 h-screen flex flex-col text-slate-800 font-sans overflow-hidden">
+
+    <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+        <div class="font-bold text-lg tracking-wide text-slate-800">Medi <span class="text-blue-600 font-normal">Diagnostic</span></div>
+        <div class="flex items-center space-x-4">
+            <div class="font-semibold text-sm text-slate-600">{{ session.get('name', 'Doctor') }}</div>
+            <a href="/logout" class="text-slate-400 hover:text-red-500 transition ml-2">Logout</a>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+        
+        <div class="w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <div class="font-bold text-slate-400 uppercase text-xs tracking-wider">Pending Reports</div>
+                <div class="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ reports|length }} Waiting</div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-2 space-y-2 bg-slate-50">
+                {% if reports|length == 0 %}
+                    <div class="p-8 text-center text-slate-400 text-sm">No pending cases.</div>
+                {% else %}
+                    {% for report in reports %}
+                    <div onclick="loadPatient('{{ loop.index0 }}')" id="card-{{ loop.index0 }}" class="patient-card group bg-white border-l-4 border-transparent p-3 shadow-sm cursor-pointer hover:bg-slate-50 transition">
+                        <div class="font-bold text-slate-600 group-hover:text-blue-600">{{ report['patient_name'] }}</div>
+                        <div class="text-xs text-slate-400 flex justify-between mt-1">
+                            <span class="uppercase font-semibold text-[10px]">{{ report['scan_type'] }}</span> 
+                            <span>{{ report['ai_confidence']|int }}% AI</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="w-full md:flex-1 bg-slate-100 relative flex flex-col items-center justify-center p-4 min-h-[50vh]">
+            
+            <div id="empty-state" class="text-center text-slate-400">
+                <p>Select a patient from the sidebar.</p>
+            </div>
+
+            <div id="content-state" class="hidden w-full h-full flex-col items-center justify-center relative">
+                <div class="absolute top-2 left-2 bg-white/90 backdrop-blur px-3 py-1 rounded text-xs text-slate-600 border shadow-sm z-20">
+                    <span id="scan-type-badge" class="font-bold uppercase">SCAN</span> Mode
+                </div>
+                
+                <div class="w-full h-full max-h-[80vh] bg-black rounded-lg shadow-2xl border-4 border-white flex items-center justify-center relative overflow-hidden">
+                    <img id="main-image" src="" class="object-contain w-full h-full opacity-90">
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col p-6 shadow-xl z-10 shrink-0">
+            <h3 class="font-bold text-slate-800 mb-6 text-lg">Diagnostic Panel</h3>
+            
+            <div id="ai-panel" class="hidden bg-slate-50 rounded-xl p-5 mb-6 border border-slate-200">
+                <div class="text-slate-400 text-xs uppercase font-bold mb-2">AI Prediction</div>
+                <div id="ai-result-text" class="text-xl font-bold text-slate-800 mb-1">...</div>
+                
+                <div class="w-full bg-slate-200 h-2 rounded-full mt-3 overflow-hidden">
+                    <div id="confidence-bar" class="bg-blue-500 h-full w-[0%] transition-all duration-1000"></div>
+                </div>
+                <div id="confidence-text" class="text-right text-blue-500 text-sm font-bold mt-1">0%</div>
+            </div>
+
+            <div id="action-panel" class="flex-1 opacity-50 pointer-events-none transition">
+                <form action="/update_report" method="POST" id="diagnosis-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="report_id" id="hidden-report-id">
+                    
+                    <div id="edit-diagnosis-container" class="hidden mb-4">
+                        <label class="text-xs font-bold text-blue-500 uppercase mb-2 block">Override AI Diagnosis</label>
+                        <input type="text" name="final_diagnosis" id="final-diagnosis-input" class="w-full bg-white border-2 border-blue-400 rounded-lg p-3 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <label class="text-xs font-bold text-slate-400 uppercase mb-2 block">Doctor's Notes</label>
+                    <textarea name="doctor_notes" class="w-full h-32 bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none resize-none mb-4" placeholder="Add clinical observations..."></textarea>
+                    
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg mb-3 transition transform active:scale-95">
+                        Confirm & Save Diagnosis
+                    </button>
+                </form>
+                
+                <button type="button" onclick="enableEditMode()" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-3 rounded-lg transition transform active:scale-95">
+                    Edit AI Diagnosis
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script id="ui-flash-data" type="application/json">{{ get_flashed_messages(with_categories=true) | tojson }}</script>
+    <script id="reports-data" type="application/json">{{ reports | tojson }}</script>
+    <script>
+        window.UI_ROLE = "doctor";
+        window.REPORTS = JSON.parse(document.getElementById("reports-data").textContent);
+    </script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/doctor.js') }}"></script>
+</body>
+</html>

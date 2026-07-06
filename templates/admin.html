@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Panel - MediDiagnostic</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-extras.css') }}">
+    <style>
+        /* Workspace toggle button states (vanilla CSS so we don't depend on a
+           Tailwind config). The .is-active class is added by toggleWorkspace(). */
+        .workspace-btn {
+            background-color: #f1f5f9;   /* slate-100 */
+            color: #475569;              /* slate-600 */
+            border: 1px solid transparent;
+        }
+        .workspace-btn:hover {
+            background-color: #e2e8f0;   /* slate-200 */
+            color: #1e293b;              /* slate-800 */
+        }
+        .workspace-btn.is-active {
+            background-color: #2563eb;   /* blue-600 */
+            color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+        .workspace-btn.is-active:hover {
+            background-color: #1d4ed8;   /* blue-700 */
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex flex-col font-sans pb-10">
+
+    <header class="bg-white shadow-sm sticky top-0 z-20 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="font-bold text-slate-800 text-xl tracking-wide">
+                MEDI<span class="text-blue-600">ADMIN</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="font-semibold text-sm text-slate-600 hidden sm:block">Welcome, {{ session.get('name',
+                    'Admin') }}</span>
+                <div
+                    class="h-8 w-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">
+                    {{ session.get('name', 'Admin')[0]|upper }}</div>
+
+                <a href="/logout"
+                    class="text-slate-400 hover:text-red-500 transition border-l border-slate-200 pl-4 ml-2 inline-flex items-center"
+                    title="Logout">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                        </path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 w-full mt-8 flex-1 space-y-8">
+
+        <!-- ── Command Center Hero (Doctors / Secretaries / Admins / Total Processed Scans) ── -->
+        <section aria-label="Command Center metrics">
+            <div class="flex items-end justify-between mb-4">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">Command Center</h2>
+                    <p class="text-sm text-slate-500 font-medium">Staffing & throughput overview</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <!-- Patients -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4 border-b-4 border-b-cyan-500 hover:-translate-y-1 transition duration-300">
+                    <div class="p-3 bg-cyan-50 text-cyan-600 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Patients</div>
+                        <div class="text-2xl font-black text-slate-800">{{ stats.total_patients }}</div>
+                    </div>
+                </div>
+
+                <!-- Doctors -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4 border-b-4 border-b-blue-500 hover:-translate-y-1 transition duration-300">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Doctors</div>
+                        <div class="text-2xl font-black text-slate-800">{{ stats.total_doctors }}</div>
+                    </div>
+                </div>
+
+                <!-- Secretaries -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4 border-b-4 border-b-purple-500 hover:-translate-y-1 transition duration-300">
+                    <div class="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Secretaries</div>
+                        <div class="text-2xl font-black text-slate-800">{{ stats.total_secretaries }}</div>
+                    </div>
+                </div>
+
+                <!-- Admins -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4 border-b-4 border-b-emerald-500 hover:-translate-y-1 transition duration-300">
+                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Admins</div>
+                        <div class="text-2xl font-black text-slate-800">{{ stats.total_admins }}</div>
+                    </div>
+                </div>
+
+                <!-- Total Processed Scans -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center space-x-4 border-b-4 border-b-amber-500 hover:-translate-y-1 transition duration-300">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Processed Scans</div>
+                        <div class="text-2xl font-black text-slate-800">{{ stats.total_processed }}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Workspace Action Bar ── -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-wrap gap-2"
+                 aria-label="Workspace switcher">
+            <button type="button" data-workspace="register"
+                    class="workspace-btn w-full md:w-auto flex-1 min-w-[200px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-bold text-sm transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+                Register New User
+            </button>
+            <button type="button" data-workspace="users"
+                    class="workspace-btn w-full md:w-auto flex-1 min-w-[200px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-bold text-sm transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                Search Current Users
+            </button>
+            <button type="button" data-workspace="reports"
+                    class="workspace-btn w-full md:w-auto flex-1 min-w-[200px] flex items-center justify-center gap-2 px-5 py-3 rounded-lg font-bold text-sm transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                View Recent Scans
+            </button>
+        </section>
+
+        <div id="workspace-register" class="workspace-panel ui-glass hidden rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                </svg>
+                Register New Staff / Patient
+            </h3>
+
+            <form action="/add_user" method="POST" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Full Name</label>
+                    <input type="text" name="full_name" placeholder="e.g. Dr. Ahmed" required
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Username</label>
+                    <input type="text" name="username" placeholder="Unique Login ID" required
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Password</label>
+                    <input type="password" name="password" placeholder="••••••••" required
+                        minlength="4" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{4,}"
+                        title="At least 4 characters, including one uppercase letter, one lowercase letter, and one number (e.g. Pass1234)."
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <p class="text-[11px] text-slate-400 mt-1 pl-1">Min 4 chars · 1 uppercase · 1 lowercase · 1 number</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Email Address</label>
+                    <input type="email" name="email" placeholder="user@hospital.com"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Phone Number</label>
+                    <input type="tel" name="phone" placeholder="+20 10x xxxx xxxx"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Gender</label>
+                    <select name="gender"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Date of Birth</label>
+                    <input type="date" name="dob"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div class="flex flex-col justify-end gap-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">System Role</label>
+                    <select name="role"
+                        class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer">
+                        <option value="admin">Admin</option>
+                        <option value="doctor">Doctor</option>
+                        <option value="secretary">Secretary</option>
+                        <option value="patient">Patient</option>
+                    </select>
+                </div>
+                <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+                    <button type="submit"
+                        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-lg shadow-lg shadow-blue-500/30 transition transform active:scale-95 flex items-center justify-center">
+                        Save User
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="workspace-users" class="workspace-panel bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div
+                class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                        </path>
+                    </svg>
+                    Registered Users Directory
+                    <span id="filter-label"
+                        class="ml-2 text-sm font-normal text-blue-600 {% if not search_query %}hidden{% endif %}">
+                        – filtered by "<span id="filter-term">{{ search_query }}</span>"
+                    </span>
+                </h3>
+                <form method="GET" action="/admin" id="user-search-form" class="flex gap-2">
+                    <div class="relative">
+                        <input type="text" id="user-search-input" name="search" value="{{ search_query }}"
+                            placeholder="Search name, username, email or phone…" autocomplete="off"
+                            class="w-64 pl-4 pr-10 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <!-- spinner (hidden by default) -->
+                        <svg id="search-spinner"
+                            class="hidden absolute right-3 top-2.5 w-4 h-4 animate-spin text-blue-500" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </div>
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+                        Search
+                    </button>
+                    <button type="button" id="search-clear-btn"
+                        class="{% if not search_query %}hidden {% endif %}bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold px-3 py-2 rounded-lg transition"
+                        onclick="clearSearch()">
+                        &times; Clear
+                    </button>
+                </form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
+                        <tr>
+                            <th class="px-6 py-4 text-xs">ID</th>
+                            <th class="px-6 py-4">Full Name</th>
+                            <th class="px-6 py-4">Role</th>
+                            <th class="px-6 py-4">Login Username</th>
+                            <th class="px-6 py-4">Gender / DOB</th>
+                            <th class="px-6 py-4">Email / Phone</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
+                        {% for user in users %}
+                        <tr class="hover:bg-slate-50 transition {% if loop.index > 10 %}hidden extra-user{% endif %}">
+                            <td class="px-6 py-4 font-mono text-slate-400 text-xs">#{{ user.id }}</td>
+                            <td class="px-6 py-4 font-bold text-slate-800">{{ user['full_name'] }}</td>
+                            <td class="px-6 py-4">
+                                {% if user['role'] == 'admin' %}
+                                <span
+                                    class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Admin</span>
+                                {% elif user['role'] == 'doctor' %}
+                                <span
+                                    class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Doctor</span>
+                                {% elif user['role'] == 'secretary' %}
+                                <span
+                                    class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Secretary</span>
+                                {% else %}
+                                <span
+                                    class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Patient</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 font-mono text-slate-500">{{ user['username'] }}</td>
+                            <td class="px-6 py-4">
+                                <div class="text-slate-700 text-xs font-bold">{{ user['gender'] or '—' }}</div>
+                                <div class="text-slate-400 text-[10px] mt-0.5">{{ user['dob'] or '—' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if user['email'] %}
+                                <div class="text-slate-700 text-xs font-medium">{{ user['email'] }}</div>
+                                {% endif %}
+                                {% if user['phone'] %}
+                                <div class="text-slate-400 text-xs mt-0.5">{{ user['phone'] }}</div>
+                                {% endif %}
+                                {% if not user['email'] and not user['phone'] %}
+                                <span class="text-slate-300 text-xs">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <form action="/delete_user/{{ user['id'] }}" method="POST"
+                                    data-ui-confirm="Delete this user permanently? This cannot be undone."
+                                    data-ui-confirm-title="Remove user"
+                                    data-ui-confirm-label="Delete user">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit"
+                                        class="text-red-500 hover:text-red-700 font-bold hover:bg-red-50 px-3 py-1 rounded transition">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-400 font-medium">No users found{% if
+                                search_query %} matching "{{ search_query }}"{% endif %}.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if users|length > 10 %}
+            <div class="px-6 py-4 border-t border-slate-200 text-center" id="read-more-users-container">
+                <button
+                    onclick="document.querySelectorAll('.extra-user').forEach(el => el.classList.remove('hidden')); document.getElementById('read-more-users-container').style.display='none';"
+                    class="text-blue-600 hover:text-blue-800 font-bold text-sm inline-flex items-center transition">
+                    Read More
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="workspace-reports" class="workspace-panel hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                    Recent Scans
+                    <span id="report-filter-label"
+                        class="ml-2 text-sm font-normal text-blue-600 {% if not reports_search %}hidden{% endif %}">
+                        – filtered by "<span id="report-filter-term">{{ reports_search }}</span>"
+                    </span>
+                </h3>
+                <form method="GET" action="/admin" id="report-search-form" class="flex gap-2">
+                    <div class="relative">
+                        <input type="text" id="report-search-input" name="reports_search" value="{{ reports_search }}"
+                            placeholder="Search Patient Name or Report ID…" autocomplete="off"
+                            class="w-64 pl-4 pr-10 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <svg id="report-search-spinner"
+                            class="hidden absolute right-3 top-2.5 w-4 h-4 animate-spin text-blue-500" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </div>
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+                        Search
+                    </button>
+                    <button type="button" id="report-search-clear-btn"
+                        class="{% if not reports_search %}hidden {% endif %}bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold px-3 py-2 rounded-lg transition"
+                        onclick="clearReportSearch()">
+                        &times; Clear
+                    </button>
+                </form>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-sm font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-3">Report ID</th>
+                            <th class="px-6 py-3">Patient Name</th>
+                            <th class="px-6 py-3">Scan Type</th>
+                            <th class="px-6 py-3">AI Diagnosis</th>
+                            <th class="px-6 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
+                        {% for report in recent_reports %}
+                        <tr class="hover:bg-slate-50 transition {% if loop.index > 10 %}hidden extra-report{% endif %}">
+                            <td class="px-6 py-4 font-bold text-slate-500">#{{ report['id'] }}</td>
+                            <td class="px-6 py-4 font-bold">{{ report['full_name'] }}</td>
+                            <td class="px-6 py-4 uppercase text-slate-500">{{ report['scan_type'] }}</td>
+                            <td class="px-6 py-4">{{ report['ai_result'] }}</td>
+                            <td class="px-6 py-4">
+                                {% if report['status'] == 'APPROVED' %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Approved
+                                    ✓</span>
+                                {% elif report['status'] == 'PRELIMINARY' %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Preliminary
+                                    ⚠️</span>
+                                {% else %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">Pending
+                                    ⏳</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No data available{% if reports_search %} for "{{ reports_search }}"{% endif %}.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if recent_reports|length > 10 %}
+            <div class="px-6 py-4 border-t border-slate-200 text-center" id="read-more-reports-container">
+                <button
+                    onclick="document.querySelectorAll('.extra-report').forEach(el => el.classList.remove('hidden')); document.getElementById('read-more-reports-container').style.display='none';"
+                    class="text-blue-600 hover:text-blue-800 font-bold text-sm inline-flex items-center transition">
+                    Read More
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="bg-slate-900 rounded-xl shadow-2xl border border-slate-800 overflow-hidden">
+            <div class="bg-slate-950 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    System Audit Logs
+                </h3>
+                <div class="flex space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                </div>
+            </div>
+
+            <div id="audit-logs-wrapper" class="p-6 h-64 overflow-y-auto font-mono text-sm bg-slate-900">
+                {% if logs %}
+                <ul class="space-y-3 text-left">
+                    {% for log in logs %}
+                    {% if 'SECURITY' in log %}
+                    <li
+                        class="text-emerald-400 border-b border-slate-800/50 pb-2 hover:bg-slate-800/50 px-2 rounded transition">
+                        <span class="text-slate-500 mr-2">~</span>{{ log }}
+                    </li>
+                    {% elif 'MEDICAL' in log %}
+                    <li
+                        class="text-sky-400 border-b border-slate-800/50 pb-2 hover:bg-slate-800/50 px-2 rounded transition">
+                        <span class="text-slate-500 mr-2">~</span>{{ log }}
+                    </li>
+                    {% else %}
+                    <li
+                        class="text-slate-300 border-b border-slate-800/50 pb-2 hover:bg-slate-800/50 px-2 rounded transition">
+                        <span class="text-slate-500 mr-2">~</span>{{ log }}
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="h-full flex flex-col items-center justify-center text-slate-600 space-y-4">
+                    <svg class="w-12 h-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4">
+                        </path>
+                    </svg>
+                    <p>No audit logs available yet. The system is monitoring...</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </main>
+
+    <script id="ui-flash-data" type="application/json">{{ get_flashed_messages(with_categories=true) | tojson }}</script>
+    <script>window.UI_ROLE = "admin";</script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+
+</html>

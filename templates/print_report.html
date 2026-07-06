@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Report #{{ report.id }} — MediDiagnostic</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        @font-face {
+            font-family: 'Lora';
+            font-style: normal;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url("{{ url_for('static', filename='fonts/Lora-VariableFont_wght.ttf') }}") format('truetype');
+        }
+        @font-face {
+            font-family: 'Lora';
+            font-style: italic;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url("{{ url_for('static', filename='fonts/Lora-Italic-VariableFont_wght.ttf') }}") format('truetype');
+        }
+        @font-face {
+            font-family: 'Outfit';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url("{{ url_for('static', filename='fonts/Outfit-VariableFont_wght.ttf') }}") format('truetype');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', 'Segoe UI', sans-serif;
+            color: #1e293b;
+            background: #f1f5f9;
+            line-height: 1.6;
+        }
+
+        .report-page {
+            max-width: 830px;
+            margin: 40px auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 2px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── Decorative top stripe ── */
+        .report-page::before {
+            content: '';
+            display: block;
+            height: 6px;
+            background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 50%, #1e3a5f 100%);
+        }
+
+        .report-body { padding: 48px 56px 40px; }
+
+        /* ── Letterhead ── */
+        .letterhead {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #1e293b;
+            margin-bottom: 28px;
+        }
+        .letterhead-left { display: flex; align-items: center; gap: 16px; }
+        .letterhead-logo {
+            width: 72px; height: 72px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .letterhead-org h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+        .letterhead-org .dept {
+            font-size: 11px;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+        .letterhead-org .addr {
+            font-size: 9px;
+            color: #94a3b8;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .letterhead-right { text-align: right; }
+        .letterhead-right .badge {
+            display: inline-block;
+            background: #0f172a;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 5px 14px;
+            border-radius: 2px;
+            margin-bottom: 10px;
+        }
+        .letterhead-right .meta-label {
+            font-size: 8px;
+            color: #94a3b8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .letterhead-right .meta-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .letterhead-right .accession {
+            color: #2563eb;
+        }
+
+        /* ── Section titles ── */
+        .section-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #1e293b;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 6px;
+            margin-bottom: 16px;
+        }
+
+        /* ── Patient demographics table ── */
+        .demo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 28px;
+            font-size: 12px;
+        }
+        .demo-table td {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        .demo-table .label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .demo-table .value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* ── Clinical sections ── */
+        .clinical-section {
+            margin-bottom: 24px;
+        }
+        .clinical-section .body {
+            font-family: 'Lora', Georgia, serif;
+            font-size: 13px;
+            line-height: 1.8;
+            color: #334155;
+            text-align: justify;
+        }
+
+        /* ── Impression box ── */
+        .impression-box {
+            border: 2px solid #1e293b;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            position: relative;
+        }
+        .impression-box .imp-label {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #fff;
+            padding: 0 8px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #1e293b;
+        }
+        .impression-box .imp-result {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.4;
+        }
+
+        /* ── Doctor notes ── */
+        .doctor-notes {
+            border-left: 3px solid #2563eb;
+            padding: 14px 18px;
+            background: #f8fafc;
+            margin-top: 12px;
+            font-family: 'Lora', Georgia, serif;
+            font-style: italic;
+            font-size: 12px;
+            color: #334155;
+            line-height: 1.7;
+        }
+        .doctor-notes .note-label {
+            font-family: 'Outfit', sans-serif;
+            font-style: normal;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2563eb;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        /* ── Disclaimer ── */
+        .disclaimer {
+            border: 1px solid #e2e8f0;
+            border-left: 3px solid #f59e0b;
+            padding: 12px 16px;
+            margin-bottom: 28px;
+            background: #fffbeb;
+        }
+        .disclaimer .disc-title {
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #92400e;
+            margin-bottom: 4px;
+        }
+        .disclaimer p {
+            font-size: 9px;
+            color: #44403c;
+            line-height: 1.6;
+        }
+
+        /* ── Sign-off ── */
+        .signoff {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .signoff-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .signoff-qr {
+            width: 60px; height: 60px;
+            background: #0f172a;
+            border: 1px solid #e2e8f0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #fff;
+            font-size: 6px;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.3;
+            letter-spacing: 0.5px;
+            border-radius: 2px;
+        }
+        .signoff-verify {
+            font-size: 7px;
+            color: #94a3b8;
+            font-weight: 700;
+            max-width: 100px;
+            line-height: 1.5;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .signoff-stamp {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 3px solid rgba(37,99,235,0.2);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            color: rgba(37,99,235,0.35);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            text-transform: uppercase;
+            transform: rotate(-12deg);
+        }
+        .signoff-stamp .stamp-org { font-size: 7px; }
+        .signoff-stamp .stamp-main { font-size: 13px; line-height: 1.1; }
+        .signoff-stamp .stamp-sub { font-size: 6px; }
+
+        .signoff-sig { text-align: center; }
+        .signoff-sig .sig-line {
+            width: 160px;
+            border-bottom: 1px solid #94a3b8;
+            height: 36px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 18px;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+        .signoff-sig .sig-name {
+            font-size: 9px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+        .signoff-sig .sig-title {
+            font-size: 8px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .signoff-sig .sig-lic {
+            font-size: 7px;
+            color: #94a3b8;
+        }
+
+        /* ── Footer ── */
+        .report-footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .report-footer p {
+            font-size: 7px;
+            color: #cbd5e1;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* ── Action bar (screen only) ── */
+        .action-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 50;
+        }
+        .action-bar button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Outfit', sans-serif;
+        }
+        .action-bar button:active { transform: scale(0.97); }
+        .btn-back {
+            background: #fff;
+            color: #475569;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .btn-back:hover { background: #f8fafc; }
+        .btn-print {
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+        }
+        .btn-print:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        /* ── Print overrides ── */
+        @page {
+            size: A4;
+            margin: 12mm 12mm 14mm 12mm;
+        }
+        @media print {
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print { display: none !important; }
+            .report-page {
+                margin: 0; padding: 0;
+                border: none; box-shadow: none; border-radius: 0;
+                max-width: 100%;
+            }
+            .report-page::before { height: 4px; }
+            .report-body { padding: 32px 40px 24px; }
+            .impression-box, .signoff, .clinical-section { page-break-inside: avoid; break-inside: avoid; }
+            h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+            a { color: inherit !important; text-decoration: none !important; }
+        }
+    </style>
+</head>
+
+<body onload="setTimeout(() => window.print(), 1000)">
+
+    <!-- Action bar (screen only) -->
+    <div class="action-bar no-print">
+        <button class="btn-back" onclick="window.history.back()" type="button">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back
+        </button>
+        <button class="btn-print" onclick="window.print()" type="button">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                </path>
+            </svg>
+            Print Report
+        </button>
+    </div>
+
+    <div class="report-page">
+        <div class="report-body">
+
+            <!-- ═══ LETTERHEAD ═══ -->
+            <div class="letterhead">
+                <div class="letterhead-left">
+                    <img src="{{ url_for('static', filename='img/hospital_logo.png') }}"
+                         class="letterhead-logo" alt="Hospital Logo">
+                    <div class="letterhead-org">
+                        <h1>MediDiagnostic</h1>
+                        <div class="dept">Radiology &amp; AI Diagnostics Department</div>
+                        <div class="addr">
+                            123 Medical Plaza, Technology District, New Cairo<br>
+                            Tel: +20 2 2345 6789 &nbsp;|&nbsp; www.medidiagnostic.ai
+                        </div>
+                    </div>
+                </div>
+                <div class="letterhead-right">
+                    <div class="badge">Diagnostic Report</div>
+                    <div>
+                        <div class="meta-label">Date of Report</div>
+                        <div class="meta-value">
+                            {{ report.created_at.strftime("%B %d, %Y") if report.created_at else "Date Unavailable" }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Accession No.</div>
+                        <div class="meta-value accession">MDX-{{ report.id }}-{{ report.created_at.strftime('%Y') if report.created_at else 'YYYY' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PATIENT DEMOGRAPHICS ═══ -->
+            <div class="section-title">Patient Information</div>
+            <table class="demo-table">
+                <tr>
+                    <td style="width:40%">
+                        <span class="label">Patient Name</span>
+                        <span class="value">{{ report.patient_name }}</span>
+                    </td>
+                    <td style="width:20%">
+                        <span class="label">Patient ID</span>
+                        <span class="value">#{{ report.patient_id }}</span>
+                    </td>
+                    <td style="width:20%">
+                        <span class="label">Age</span>
+                        <span class="value">{{ age }}</span>
+                    </td>
+                    <td style="width:20%">
+                        <span class="label">Gender</span>
+                        <span class="value">{{ gender }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="label">Examination</span>
+                        <span class="value">{{ report.scan_type }}</span>
+                    </td>
+                    <td>
+                        <span class="label">Modality</span>
+                        <span class="value">Digital X-Ray</span>
+                    </td>
+                    <td>
+                        <span class="label">Report Status</span>
+                        <span class="value" style="color: #16a34a;">✓ Verified</span>
+                    </td>
+                    <td>
+                        <span class="label">Report ID</span>
+                        <span class="value">#{{ report.id }}</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ═══ DISCLAIMER ═══ -->
+            <div class="disclaimer">
+                <div class="disc-title">Important — Medical Disclaimer</div>
+                <p>
+                    The findings in this report are generated by an AI-assisted screening system and do
+                    <strong>not</strong> constitute a definitive medical diagnosis. All results must be reviewed
+                    and confirmed by a licensed radiologist or treating physician before any clinical decision is made.
+                </p>
+            </div>
+
+            <!-- ═══ DIAGNOSTIC IMPRESSION ═══ -->
+            <div class="impression-box">
+                <div class="imp-label">Diagnostic Impression</div>
+                <div class="imp-result">{{ report.ai_result }}</div>
+            </div>
+
+            <!-- ═══ CLINICAL FINDINGS ═══ -->
+            <div class="clinical-section">
+                <div class="section-title">Clinical Findings</div>
+                <div class="body">
+                    <p>
+                        A <strong>{{ report.scan_type }}</strong> examination was performed.
+                        The submitted radiograph was processed through the MediDiagnostic AI Engine,
+                        which cross-referenced the imaging data against a validated clinical dataset.
+                        The system's diagnostic impression is documented above.
+                    </p>
+                    {% if report.doctor_notes %}
+                    <div class="doctor-notes" style="margin-top: 16px;">
+                        <span class="note-label">Physician's Clinical Notes</span>
+                        "{{ report.doctor_notes }}"
+                    </div>
+                    {% else %}
+                    <p style="color: #94a3b8; font-style: italic; margin-top: 12px;">
+                        No supplementary clinical notes were recorded by the reviewing physician.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ═══ APPROVAL INFO ═══ -->
+            {% if report.approved_by %}
+            <div class="clinical-section">
+                <div class="section-title">Approval Record</div>
+                <table class="demo-table">
+                    <tr>
+                        <td style="width:50%">
+                            <span class="label">Approved By</span>
+                            <span class="value">{{ report.approved_by.full_name }}</span>
+                        </td>
+                        <td style="width:50%">
+                            <span class="label">Approval Date</span>
+                            <span class="value">
+                                {{ report.approved_at.strftime("%B %d, %Y at %H:%M") if report.approved_at else "—" }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- ═══ SIGN-OFF ═══ -->
+            <div class="signoff">
+                <div class="signoff-left">
+                    <div class="signoff-qr">
+                        VERIFIED<br>DOCUMENT<br>MDX-{{ report.id }}
+                    </div>
+                    <div class="signoff-verify">
+                        Scan to verify authenticity on MediDiagnostic portal
+                    </div>
+                </div>
+
+                <div class="signoff-stamp">
+                    <span class="stamp-org">MediDiagnostic</span>
+                    <span class="stamp-main">Official</span>
+                    <span class="stamp-sub">Medical Center</span>
+                </div>
+
+                <div class="signoff-sig">
+                    <div class="sig-line">
+                        {% if report.approved_by %}
+                            {{ report.approved_by.full_name }}
+                        {% else %}
+                            Pending Approval
+                        {% endif %}
+                    </div>
+                    <div class="sig-name">
+                        {% if report.approved_by %}
+                            {{ report.approved_by.full_name }}
+                        {% else %}
+                            Reviewing Physician
+                        {% endif %}
+                    </div>
+                    <div class="sig-title">Attending Radiologist</div>
+                    <div class="sig-lic">{% if report.approved_by %}Lic No: #MD-{{ report.approved_by.id }}{% else %}Lic No: Pending{% endif %}</div>
+                </div>
+            </div>
+
+            <!-- ═══ FOOTER ═══ -->
+            <div class="report-footer">
+                <p>Confidential Medical Document &nbsp;•&nbsp; Electronically Signed &nbsp;•&nbsp; End of Report</p>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+</html>
